@@ -1,15 +1,17 @@
-From 3d4ba26c976d0157286e99ff1746921937888fee Mon Sep 17 00:00:00 2001
+From 315be8dd6b631d03435b8504fabf69b7ad13e1b8 Mon Sep 17 00:00:00 2001
 From: PatoGuereque <contacto@patoguereque.com>
 Date: Mon, 24 Aug 2020 20:50:22 -0500
 Subject: [PATCH] A00826147-homework-02
 
-./chown <username>
-Requires 1 argument (valid linux username)
+./chown <file> <username>
+Requires 2 argument (valid file and valid linux username)
 This executable requires sudo/root to retrieve the uid form the user.
 The file group will not be modified.
-For this homework, this will modify "file.txt" and change the ownership to the supplied username.
+For this homework, this will modify the supplied file and change the ownership to the supplied username.
 
 To build the executable cd into labs/02/chown_src/ and make
+The executable will be located in labs/02/
+Binary not distributed on patch as instructed
 
 Signed-off-by: PatoGuereque <contacto@patoguereque.com>
 
@@ -26,7 +28,7 @@ index 0000000000000000000000000000000000000000..f22276e3a3346db5d04bd3336969f473
 +	rm -f ../chown
 diff --git a/labs/02/chown_src/chown.c b/labs/02/chown_src/chown.c
 new file mode 100644
-index 0000000000000000000000000000000000000000..c301cfc09cfbe4fce1ca0b0fef7df482538ba6d3
+index 0000000000000000000000000000000000000000..9af15399de78471bb86c0b487090bd78c61212ef
 --- /dev/null
 +++ b/labs/02/chown_src/chown.c
 @@ -0,0 +1,32 @@
@@ -42,14 +44,14 @@ index 0000000000000000000000000000000000000000..c301cfc09cfbe4fce1ca0b0fef7df482
 +int main (int argc, char const *argv[]) {
 +    if (argc != 3) {
 +        fprintf(stderr, "Expected 2 arguments. Usage: ./chown <file> <username>\n");
-+        return -1;
++        exit(1);
 +    }
 +
 +    struct passwd *pwd = getpwnam(argv[2]);
 +
 +    if (pwd == NULL) {
 +        fprintf(stderr, "chown failed, user '%s' not found\n", argv[2]);
-+        return -1;
++        exit(1);
 +    }
 +
 +    const uid_t owner =  pwd->pw_uid;
