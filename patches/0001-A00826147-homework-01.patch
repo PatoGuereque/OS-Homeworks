@@ -1,0 +1,22 @@
+From 9de280784fa943bfbff6b4b1c0e66a579d149f5d Mon Sep 17 00:00:00 2001
+From: PatoGuereque <contacto@patoguereque.com>
+Date: Mon, 10 Aug 2020 19:47:42 -0500
+Subject: [PATCH] A00826147-homework-01
+
+
+diff --git a/labs/01/hello.c b/labs/01/hello.c
+index 202b954e3ec73c342bf3c77b71cfb3596ac329dd..85e018ef8eb5a7ab465b3cc7765bb11029344481 100644
+--- a/labs/01/hello.c
++++ b/labs/01/hello.c
+@@ -4,6 +4,6 @@
+ 
+ int main(void) {
+     printf("Hello World\n");
+-    printf("My name is Christopher Salvador Márquez Álvarez \n");
+-    return 0; 
++    printf("My name is José Patricio Güereque de la Garza\n");
++    return 0;
+ }
+-- 
+2.17.1
+

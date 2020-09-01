@@ -1,0 +1,70 @@
+From 3d4ba26c976d0157286e99ff1746921937888fee Mon Sep 17 00:00:00 2001
+From: PatoGuereque <contacto@patoguereque.com>
+Date: Mon, 24 Aug 2020 20:50:22 -0500
+Subject: [PATCH] A00826147-homework-02
+
+./chown <username>
+Requires 1 argument (valid linux username)
+This executable requires sudo/root to retrieve the uid form the user.
+The file group will not be modified.
+For this homework, this will modify "file.txt" and change the ownership to the supplied username.
+
+To build the executable cd into labs/02/chown_src/ and make
+
+Signed-off-by: PatoGuereque <contacto@patoguereque.com>
+
+diff --git a/labs/02/chown_src/Makefile b/labs/02/chown_src/Makefile
+new file mode 100644
+index 0000000000000000000000000000000000000000..f22276e3a3346db5d04bd3336969f47359ada747
+--- /dev/null
++++ b/labs/02/chown_src/Makefile
+@@ -0,0 +1,5 @@
++all:
++	gcc chown.c -o ../chown
++
++clean:
++	rm -f ../chown
+diff --git a/labs/02/chown_src/chown.c b/labs/02/chown_src/chown.c
+new file mode 100644
+index 0000000000000000000000000000000000000000..c301cfc09cfbe4fce1ca0b0fef7df482538ba6d3
+--- /dev/null
++++ b/labs/02/chown_src/chown.c
+@@ -0,0 +1,32 @@
++#include <unistd.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <sys/syscall.h>
++#include <errno.h>
++#include <sys/stat.h>
++#include <pwd.h>
++#include <grp.h>
++
++int main (int argc, char const *argv[]) {
++    if (argc != 3) {
++        fprintf(stderr, "Expected 2 arguments. Usage: ./chown <file> <username>\n");
++        return -1;
++    }
++
++    struct passwd *pwd = getpwnam(argv[2]);
++
++    if (pwd == NULL) {
++        fprintf(stderr, "chown failed, user '%s' not found\n", argv[2]);
++        return -1;
++    }
++
++    const uid_t owner =  pwd->pw_uid;
++    int rc = chown(argv[1], owner, -1);
++
++    if (rc == -1){
++        fprintf(stderr, "chown failed, errno = %d\n", errno);
++        exit(1);
++    }
++
++    return 0;
++}
+diff --git a/labs/02/file.txt b/labs/02/file.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+-- 
+2.17.1
+
