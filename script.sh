@@ -11,8 +11,11 @@ case "$1" in
     ;;
     "apply-patches" | "apply")
 	echo "Applying all patched from patches/"
-	#git submodule update --init
+	if [ ! -d  "operating-systems-lecture" ]; then
+            git clone https://github.com/victorRodriguez/operating-systems-lecture/
+        fi
 	cd operating-systems-lecture/
+	git fetch
 	git reset --hard origin/master
 	find "../patches/"*.patch -print0 | xargs -0 git am --3way --ignore-whitespace
 	echo "Applied all patches"
