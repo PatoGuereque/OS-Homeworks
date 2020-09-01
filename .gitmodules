@@ -1,0 +1,3 @@
+[submodule "operating-systems-lecture"]
+	path = operating-systems-lecture
+	url = git@github.com:VictorRodriguez/operating-systems-lecture.git
