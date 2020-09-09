@@ -1,0 +1,419 @@
+From a2c7705f121b95d8654be9fe1beff2b279663d5e Mon Sep 17 00:00:00 2001
+From: PatoTheBest <jpguereque@yahoo.com.mx>
+Date: Tue, 8 Sep 2020 23:44:44 -0500
+Subject: [PATCH] A00826147-homework-03.patch
+
+       ,~~.
+      (  6 )-_,
+ (\___ )=='-'
+  \ .   ) )
+   \ `-' /    DuckShell
+~'`~'`~'`~'`~
+We have a shell!
+
+Implemented:
+* cd
+* basic input interface with user@hostname foldername #
+* searches the command in all the $PATH locations
+* command history (up to 20)
+* unbuffered input (allows arrow keys)
+* multiple arguments
+
+This shell doesn't support tab completion and also has issues with some programs like apt
+
+diff --git a/labs/03/dshell.c b/labs/03/dshell.c
+new file mode 100644
+index 0000000000000000000000000000000000000000..9cb0674e4d21a5b9c7dab781383a86afc6a94d1d
+--- /dev/null
++++ b/labs/03/dshell.c
+@@ -0,0 +1,386 @@
++/*
++       ,~~.
++      (  6 )-_,
++ (\___ )=='-'
++  \ .   ) )
++   \ `-' /    DuckShell
++~'`~'`~'`~'`~ Created by José Patricio Güereque
++*/
++
++#include <stdio.h>
++#include <unistd.h>
++#include <termios.h>
++#include <errno.h>
++#include <stdlib.h>
++#include <string.h>
++#include <sys/types.h>
++#include <sys/wait.h>
++
++#define SPACE ' '
++#define END_STR '\0'
++
++#define cursorforward(x) printf("\033[%dC", (x))
++#define cursorbackward(x) printf("\033[%dD", (x))
++
++#define KEY_BACKSPACE 0x007f
++#define KEY_SUPR_1    0x0033
++#define KEY_SUPR_2    0x007e
++#define KEY_ESCAPE    0x001b
++#define KEY_ENTER     0x000a
++#define KEY_UP        0x0105
++#define KEY_DOWN      0x0106
++#define KEY_LEFT      0x0107
++#define KEY_RIGHT     0x0108
++
++struct termios term, oterm;
++
++#define MAX_HISTORY 20
++
++int paths = 0;
++char **path;
++
++char **history;
++int historyIndex = 0;
++
++int kbesc(void);
++int kbget(void);
++
++int getch(void) {
++    int c = 0;
++    tcgetattr(0, &oterm);
++    memcpy(&term, &oterm, sizeof(term));
++    term.c_lflag &= ~(ICANON | ECHO);
++    term.c_cc[VMIN] = 1;
++    term.c_cc[VTIME] = 0;
++    tcsetattr(0, TCSANOW, &term);
++    c = getchar();
++    tcsetattr(0, TCSANOW, &oterm);
++    return c;
++}
++
++int kbesc(void) {
++    int c = getch();
++
++    if (c == KEY_ESCAPE) {
++        return kbesc();
++    }
++
++    if (c == '[') {
++        c = kbget();
++        switch (c) {
++            case 'A':
++                c = KEY_UP;
++                break;
++            case 'B':
++                c = KEY_DOWN;
++                break;
++            case 'C':
++                c = KEY_LEFT;
++                break;
++            case 'D':
++                c = KEY_RIGHT;
++                break;
++        }
++    }
++    return c;
++}
++
++int kbget(void) {
++    int c = getch();
++    return (c == KEY_ESCAPE) ? kbesc() : c;
++}
++
++char** split(char *str, char delim, int *size) {
++    int argC = 0;
++    for (int i = 0; i < strlen(str); i++) {
++        if (*(str + i) == delim) {
++            argC++;
++        }
++    }
++
++    char *p = strtok(str, &delim);
++    char **result = malloc(argC * sizeof(char *));
++    int i = 0;
++
++    while (p != NULL) {
++        *(result + i) = p;
++        p = strtok(NULL, &delim);
++        i++;
++    }
++    *size = argC + 1;
++    return result;
++}
++
++char* strtrim(const char *line) {
++    int size = strlen(line);
++   
++    int start = 0;
++    while (start < size && *(line + start) == SPACE) {
++        start++;
++    }
++
++    if (start == size) {
++        char* a = "";
++        return a;
++    }
++
++    int end = size - 1;
++    while (end >= 0 && *(line + end) == SPACE) {
++        end--;
++    }
++
++    char *trimmed = malloc((end - start + 2) * sizeof(char));
++    for (int i = start; i <= end; i++) {
++        *trimmed = *(line + i);
++        trimmed++;
++    }
++
++    *trimmed = '\0';
++    return trimmed - (end - start) - 1;
++}
++
++int readline(char **line) {
++    char *p = getenv("USER");
++    char buf[4096]; // 4096 is the max linux path size
++    char *dir = getcwd(buf, sizeof buf);
++    char *path = dir;
++    while (*path != END_STR) {
++        if (*path == '/') {
++            dir = path + 1;
++        }
++        path++;
++    }
++    char hostname[1024];
++    gethostname(hostname, 1024);
++
++    printf("\033[0;31m%s\033[0;33m@\033[0;36m%s \033[0;33m%s \033[0;35m# \033[0m", p, hostname, dir);
++
++    int c;
++    char *input = malloc(1024 * sizeof(char));
++    int index = 0;
++    int end = 0;
++
++    int currHIndex = historyIndex;
++    while (1) {
++        c = kbget();
++        if (c == KEY_UP || c == KEY_DOWN) {
++            if (c == KEY_UP) {
++                currHIndex--;
++                if (currHIndex < 0) {
++                    currHIndex = MAX_HISTORY - 1;
++                }
++            } else if (c == KEY_DOWN && currHIndex != historyIndex) {
++                currHIndex++;
++                currHIndex %= MAX_HISTORY;
++            }
++
++            if ((*(history + currHIndex) == NULL || currHIndex == historyIndex) && c == KEY_UP) {
++                currHIndex++;
++                currHIndex %= MAX_HISTORY;
++            } else {
++                char *newLine;
++                if ((*(history + currHIndex) == NULL || currHIndex == historyIndex) && c == KEY_DOWN) {
++                    newLine = "";
++                } else {
++                    newLine = *(history + currHIndex);
++                }
++
++                strcpy(input, newLine);
++                int newEnd = strlen(newLine) - 1;
++                if (newEnd < end) {
++                    int moveBack = (end - newEnd) - (end - index);
++                    if (moveBack > 0) {
++                        cursorbackward(moveBack);
++                    }
++                    for (int i = newEnd; i < end; i++) {
++                        putchar(' ');
++                    }
++                }
++
++                if (index > 0) {
++                    cursorbackward(index);
++                }
++                
++                end = newEnd + 1;
++                index = newEnd + 1;
++                for (int i = 0; i <= newEnd; i++) {
++                    putchar(*(input + i));
++                }
++            }
++        } else if (c == KEY_ENTER || c == KEY_ESCAPE) {
++            *(input + end + 1) = '\0';
++            if (*(history + historyIndex) != NULL) {
++                free(*(history + historyIndex));
++            }
++            *(history + historyIndex) = input;
++            historyIndex++;
++            historyIndex %= MAX_HISTORY;
++            *line = input;
++            return 1;
++        } else if (c == KEY_BACKSPACE) {
++            if (index > 0) {
++                if (index != end) {
++                    for (int i = index - 1; i <= end; i++) {
++                        *(input + i) = *(input + i + 1); 
++                    }
++                } else {
++                    *(input + index - 1) = ' ';
++                }
++                index--;
++                end--;
++                cursorbackward(1);
++                for (int i = index; i <= end; i++) {
++                    putchar(*(input + i));
++                }
++                cursorbackward(end - index + 1);
++            }
++        } else if (c == KEY_SUPR_1) {
++            if (index != end) {
++                for (int i = index; i <= end; i++) {
++                    *(input + i) = *(input + i + 1); 
++                }
++                end--;
++                for (int i = index; i <= end; i++) {
++                    putchar(*(input + i));
++                }
++                cursorbackward(end - index + 1);
++            }
++        } else if (c == KEY_RIGHT) {
++            if (index > 0) {
++                cursorbackward(1);
++                index--;
++            }
++        } else if (c == KEY_LEFT) {
++            if (index < end) {
++                cursorforward(1);
++                index++;
++            }
++        } else if (c != KEY_SUPR_2) {
++            if (index != end) {
++                for (int i = end; i >= index; i--) {
++                    *(input + i + 1) = *(input + i); 
++                }
++            }
++            *(input + index) = c;
++
++            for (int i = index; i <= end; i++) {
++                putchar(*(input + i));
++            }
++            end++;
++            index++;
++            
++            if (index != end) {
++                cursorbackward(end - index);
++            }
++        }
++    }
++
++    return 0;
++}
++
++void processinput(char *input) {
++    int length = strlen(input);
++
++    if (length == 0) {
++        return;
++    }
++
++    int argC = 0;
++    char **args = split(input, ' ', &argC);
++
++    if (strcmp(*args, "cd") == 0) {
++        if (argC == 1) {
++            printf("Usage: cd <directory>\n");
++            return;
++        }
++
++        if (chdir(*(args + 1)) != 0) {
++            printf("cd: no such file or directory: %s\n", *(args + 1));
++        }
++        return;
++    } else if (strcmp(*args, "clear") == 0) {
++        system("clear");
++        return;
++    } else if (strcmp(*args, "exit") == 0) {
++        exit(0);
++        return;
++    } else if (strcmp(*args, "duck") == 0) {
++        printf("    __    \n");
++        printf("___( o)>  \n");
++        printf("\\ <_. )   \n");
++        printf(" `---'    have you quacked today?\n");
++        printf("\n");
++        return;
++    }
++
++    pid_t pid;
++    pid = fork();
++
++	if (pid < 0) {
++		fprintf(stderr, "Fork Failed");
++		exit(-1);
++	}
++	
++    if (pid == 0) {
++        if (**args == '.' || **args == '/') {
++            char *execPath = *args;
++            char *path = *args;
++            while (*path != END_STR) {
++                if (*path == '/') {
++                    *args = path + 1;
++                }
++                path++;
++            }
++            
++            if (access(execPath, X_OK) != -1) {
++                execvp(execPath, args);
++            } else {
++                exit(1);
++            }
++        } else {
++            int executed = 0;
++            char *execPath = malloc(4096 * sizeof(char)); // 4096 max linux path
++            for (int i = 0; i < paths && !executed; i++) {
++                strcpy(execPath, *(path + i));
++                strcat(execPath, "/");
++                strcat(execPath, *args);
++
++                if (access(execPath, X_OK) != -1) {
++                    execvp(execPath, args);
++                    executed = 1;
++                }
++            }
++            free(execPath);
++
++            if (!executed) {
++                exit(1);
++            }
++        }
++        
++        exit(0);
++    } else {
++        int status = 0;
++        wait(&status);
++
++        if (status == 139) {
++            printf("dshell: '%s' not found\n", *args);
++        } else if (status != 0 && status != 256) {
++            printf("Process exited with code (%d)\n", status);
++        }
++    }
++}
++
++int main(void) {
++    char *line = NULL;
++    history = malloc(MAX_HISTORY * sizeof(char *));
++
++    char *envPath = getenv("PATH");
++    path = split(envPath, ':', &paths);
++
++    while (readline(&line)) {
++        printf("\n");
++        line = strtrim(line);
++        processinput(line);
++    }
++    return 0;
++}
+\ No newline at end of file
+-- 
+2.17.1
+
