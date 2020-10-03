@@ -1,4 +1,4 @@
-From 6d46822e11bf8a0760dc4b447380ef9c85723cd2 Mon Sep 17 00:00:00 2001
+From de3cdb52a6da6234c1c86eda3e5b85ccc5704f36 Mon Sep 17 00:00:00 2001
 From: PatoGuereque <contacto@patoguereque.com>
 Date: Fri, 2 Oct 2020 23:56:08 -0500
 Subject: [PATCH] A00826147-homework-04
@@ -14,7 +14,7 @@ The performance kept improving until around 16 threads, then it just went flat.
 
 diff --git a/labs/04/montecarlo.c b/labs/04/montecarlo.c
 new file mode 100644
-index 0000000000000000000000000000000000000000..a1c5f7792d2c604a480c2c07ecde679a211fa69e
+index 0000000000000000000000000000000000000000..3ef164bad5ea503ac14a6b3588fd12137ae2da24
 --- /dev/null
 +++ b/labs/04/montecarlo.c
 @@ -0,0 +1,103 @@
@@ -116,7 +116,7 @@ index 0000000000000000000000000000000000000000..a1c5f7792d2c604a480c2c07ecde679a
 +    }
 +
 +    for (int i = 0; i < numThreads; i++) {
-+        printf("3,%d,%lld,%f\n", (i + 1), timeElapsed[i], pi[i]);
++        printf("%d,%lld,%f\n", (i + 1), timeElapsed[i], pi[i]);
 +    }
 +
 +    return 0;
