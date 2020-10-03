@@ -1,0 +1,127 @@
+From 712885c24be6f80521b7a5baec95f800b3a29423 Mon Sep 17 00:00:00 2001
+From: PatoTheBest <jpguereque@yahoo.com.mx>
+Date: Fri, 2 Oct 2020 23:56:08 -0500
+Subject: [PATCH] A00826147-homework-04
+
+Pi calculation using multiple threads.
+This is a simple program that benchmarks the calculation of Pi using 1 to 64 threads.
+The data is outputed at the end to the console as a csv format
+thread,time_millis,pi
+
+The benchmark was ran 3 times for the 64 threads and was imported into PowerBi for analyzing
+The results were: https://i.imgur.com/ak6DbhN.png
+The performance kept improving until around 16 threads, then it just went flat.
+
+diff --git a/labs/04/montecarlo.c b/labs/04/montecarlo.c
+new file mode 100644
+index 0000000000000000000000000000000000000000..a1c5f7792d2c604a480c2c07ecde679a211fa69e
+--- /dev/null
++++ b/labs/04/montecarlo.c
+@@ -0,0 +1,103 @@
++#include <stdio.h>
++#include <stdlib.h>
++#include <pthread.h>
++#include <math.h>
++#include <sys/time.h>
++
++struct args_t {
++    pthread_t thread_id;
++    long pointsToIterate;
++    unsigned int seed;
++};
++
++unsigned long long getCurrentTimeInMillis() {
++    struct timeval tv;
++    gettimeofday(&tv, NULL);
++    return(unsigned long long)(tv.tv_sec) * 1000 + (unsigned long long)(tv.tv_usec) / 1000;
++}
++
++void *calculate(void *arg) {
++    struct args_t *args = arg;
++    long *points;
++
++    if ((points = (long*) malloc(sizeof(long*))) == NULL) {
++        perror("malloc() error");
++        exit(2);
++    }
++    *points = 0;
++
++    double x, y;
++    for (long i = 0; i < args->pointsToIterate; i++) {
++        /* 
++         * "The function rand() is not reentrant or thread-safe"
++         * For this reason we will use rand_r, as this will be
++         * thread safe. 
++         * 
++         * https://linux.die.net/man/3/rand
++         */
++		x = rand_r(&(args->seed)) / ((double)(unsigned) RAND_MAX +1);
++		y = rand_r(&(args->seed)) / ((double)(unsigned) RAND_MAX +1);
++
++		if(x*x + y*y < 1){
++			*points += 1;
++		}
++    }
++
++    pthread_exit(points);
++}
++
++void calculatePi(const int numThreads, const long points, unsigned long long *timeElapsed, double *pi) {
++    time_t start = time(NULL);
++    unsigned long long startTime = getCurrentTimeInMillis();
++    srand(start);
++
++    unsigned long pointsToIterate = points / numThreads;
++    unsigned long totalPoints = pointsToIterate * numThreads; // fix for floor division
++    unsigned long pointsInside = 0;
++    unsigned int seed = rand();
++    struct args_t threadInfo[numThreads];
++
++    printf("Points: %ld\n", points);
++    printf("Threads: %d\n", numThreads);
++    printf("Starting calculation of pi...\n");
++
++    for (int i = 0; i < numThreads; i++) {
++        threadInfo[i].pointsToIterate = pointsToIterate;
++        threadInfo[i].seed = seed++;
++
++        if (pthread_create(&threadInfo[i].thread_id, NULL, &calculate, &threadInfo[i]) != 0) {
++            perror("pthread_create fail");
++            exit(1);
++        }        
++    }
++
++    for (int i = 0; i < numThreads; i++) {
++        long *points;
++        pthread_join(threadInfo[i].thread_id, (void*) &points);
++        pointsInside += *points;
++    }
++
++    *pi = (4.0 * (double)pointsInside) / ((double)totalPoints);
++    unsigned long long end = getCurrentTimeInMillis();
++    *timeElapsed = (end - startTime);
++    printf("Time elapsed: %lld ms\n", *timeElapsed);
++    printf("PI: %f\n", *pi);
++}
++
++int main(int argc, char *argv[]) {
++    int numThreads = 64;
++    unsigned long points = 100000000; // 100,000,000
++    unsigned long long timeElapsed[numThreads]; 
++    double pi[numThreads]; 
++    unsigned long long timeE;
++
++    for (int currNumThreads = 0; currNumThreads < numThreads; currNumThreads++) {
++        calculatePi((currNumThreads + 1), points, &timeElapsed[currNumThreads], &pi[currNumThreads]);
++    }
++
++    for (int i = 0; i < numThreads; i++) {
++        printf("3,%d,%lld,%f\n", (i + 1), timeElapsed[i], pi[i]);
++    }
++
++    return 0;
++}
+\ No newline at end of file
+-- 
+2.17.1
+
