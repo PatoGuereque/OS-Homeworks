@@ -1,4 +1,4 @@
-From de3cdb52a6da6234c1c86eda3e5b85ccc5704f36 Mon Sep 17 00:00:00 2001
+From 332d1763d7afcb14383d6e8d5b70f14adf444486 Mon Sep 17 00:00:00 2001
 From: PatoGuereque <contacto@patoguereque.com>
 Date: Fri, 2 Oct 2020 23:56:08 -0500
 Subject: [PATCH] A00826147-homework-04
@@ -11,6 +11,8 @@ thread,time_millis,pi
 The benchmark was ran 3 times for the 64 threads and was imported into PowerBi for analyzing
 The results were: https://i.imgur.com/ak6DbhN.png
 The performance kept improving until around 16 threads, then it just went flat.
+The tests were conducted using 100 million (100,000,000) points.
+The average PI value calculated was 3.14157, not bad as it got the first 4 digits right.
 
 diff --git a/labs/04/montecarlo.c b/labs/04/montecarlo.c
 new file mode 100644
