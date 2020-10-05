@@ -1,14 +1,18 @@
-From 332d1763d7afcb14383d6e8d5b70f14adf444486 Mon Sep 17 00:00:00 2001
+From 8e6ccdd1ceb9a94dcbe9732a3f31c79246815594 Mon Sep 17 00:00:00 2001
 From: PatoGuereque <contacto@patoguereque.com>
 Date: Fri, 2 Oct 2020 23:56:08 -0500
 Subject: [PATCH] A00826147-homework-04
 
 Pi calculation using multiple threads.
-This is a simple program that benchmarks the calculation of Pi using 1 to 64 threads.
-The data is outputed at the end to the console as a csv format
-thread,time_millis,pi
+To compile use:
+cd  labs/04/
+gcc montecarlo.c -o montecarlo -lpthread -lm
 
-The benchmark was ran 3 times for the 64 threads and was imported into PowerBi for analyzing
+Then run it with:
+./montecarlo <threads>
+
+A benchmark was conducted running the pi calculation using 1 to 64 threads.
+The benchmark was done 3 times for the 64 threads and was imported into PowerBi for analyzing
 The results were: https://i.imgur.com/ak6DbhN.png
 The performance kept improving until around 16 threads, then it just went flat.
 The tests were conducted using 100 million (100,000,000) points.
@@ -16,10 +20,10 @@ The average PI value calculated was 3.14157, not bad as it got the first 4 digit
 
 diff --git a/labs/04/montecarlo.c b/labs/04/montecarlo.c
 new file mode 100644
-index 0000000000000000000000000000000000000000..3ef164bad5ea503ac14a6b3588fd12137ae2da24
+index 0000000000000000000000000000000000000000..e86c68e166e4d0f44fbb8d2c503d27da9b5bce5f
 --- /dev/null
 +++ b/labs/04/montecarlo.c
-@@ -0,0 +1,103 @@
+@@ -0,0 +1,126 @@
 +#include <stdio.h>
 +#include <stdlib.h>
 +#include <pthread.h>
@@ -106,9 +110,32 @@ index 0000000000000000000000000000000000000000..3ef164bad5ea503ac14a6b3588fd1213
 +    printf("PI: %f\n", *pi);
 +}
 +
++int readInt(char *input) {
++    int n = 0;
++    char *curr = input;
++    while (*curr != '\0') {
++        n*=10;
++        n+= *curr - '0';
++        curr++;
++    }
++    return n;
++}
++
 +int main(int argc, char *argv[]) {
-+    int numThreads = 64;
++    if (argc != 2) {
++        perror("Please use ./montecarlo <number of threads>");
++        exit(1);
++    }
++
 +    unsigned long points = 100000000; // 100,000,000
++    unsigned long long timeElapsed;
++    double pi;
++    int numThreads = readInt(argv[1]);
++    calculatePi(numThreads, points, &timeElapsed, &pi);
++
++    /*
++    BENCHMARK
++    int numThreads = 64;
 +    unsigned long long timeElapsed[numThreads]; 
 +    double pi[numThreads]; 
 +    unsigned long long timeE;
@@ -119,7 +146,7 @@ index 0000000000000000000000000000000000000000..3ef164bad5ea503ac14a6b3588fd1213
 +
 +    for (int i = 0; i < numThreads; i++) {
 +        printf("%d,%lld,%f\n", (i + 1), timeElapsed[i], pi[i]);
-+    }
++    }*/
 +
 +    return 0;
 +}
