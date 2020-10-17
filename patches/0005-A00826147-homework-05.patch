@@ -1,0 +1,122 @@
+From 8be8b7043e9456304e4306bd23d28ee691262a9b Mon Sep 17 00:00:00 2001
+From: PatoTheBest <jpguereque@yahoo.com.mx>
+Date: Fri, 16 Oct 2020 23:02:43 -0500
+Subject: [PATCH] A00826147-homework-05
+
+Add my version of round_robin called round_robin_pato
+The syntax of running the program is:
+round_robin_pato.py -s <quantum start> -e <quantum end>
+
+This will run the round robin algorithm using a context switch of 2
+from the quantum_start to the provided quantum_end
+
+At the end it uses matplotlib to graph the results
+
+diff --git a/labs/05/round_robin_pato.py b/labs/05/round_robin_pato.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..d363d8b3750ad09a21601497cfcae551a14dc114
+--- /dev/null
++++ b/labs/05/round_robin_pato.py
+@@ -0,0 +1,98 @@
++
++#
++# Round Robin calculator
++#
++# Simulate the Round Robin mechanism based on a queue of processe
++# Print the Avg turn around time
++#
++# It can be used from command line
++#
++# process = [] might be a random list of elapsed times
++#
++# Experiment with this and make 3D graphs for:
++#
++#   avg_turn_time vs quantum vs max process size
++#
++#   context_switch vs  quantum vs context_switchs
++#
++
++import sys, getopt
++from mpl_toolkits.mplot3d import Axes3D
++from matplotlib import cm
++import matplotlib.pyplot as plt
++
++
++def main(argv):
++
++    quantum = 0
++    quantum_start = 0
++    quantum_end = 0
++    context_switch = 2
++
++    try:
++        opts, args = getopt.getopt(argv,"hs:e:",["quantum_time="])
++    except getopt.GetoptError:
++        print("round_robin_pato.py -s <quantum start> -e <quantum end>")
++        sys.exit(-1)
++
++    for opt, arg in opts:
++        if opt == '-h':
++            print ("round_robin_pato.py -s <quantum start> -e <quantum end>")
++            sys.exit()
++        elif opt in ("-s", "--quantum_start"):
++            quantum_start = int(arg)
++        elif opt in ("-e", "--quantum_end"):
++            quantum_end = int(arg)
++
++    quantum = quantum_start
++    avg_turnaround_tms = []
++    quantum_times = []
++
++    while quantum <= quantum_end:
++        execution_time = 0
++        avg_turnaround_tm = 0.0
++        context_switchs = 0
++
++        processes = [2,3,4,12,8,5,6,1]
++        num_processes = len(processes)
++        for process in processes:
++            if process <= quantum:
++                print("process executed")
++                execution_time+=process
++                print("execution time " + str(execution_time))
++            else:
++                print("process interrupted")
++                remain_time = process - quantum
++                context_switchs+=1
++                print("time process executed: "+ str(quantum))
++                execution_time+=quantum
++                execution_time+=context_switch
++                print("execution time " + str(execution_time))
++                processes.append(remain_time)
++
++            print(processes)
++            print()
++
++        avg_turnaround_tm = float(execution_time)/float(num_processes)
++        quantum_times.append(quantum)
++        avg_turnaround_tms.append(avg_turnaround_tm)
++        print ("Number of processes : " + str(num_processes))
++        print ("Number of context switch : " + str(context_switchs))
++        print ("Avg turn around time : " + str(avg_turnaround_tm))
++
++        quantum += 1
++
++
++    fig = plt.figure()
++    ax = fig.subplots()
++    ax.plot(quantum_times,avg_turnaround_tms,
++        '--bo', markersize=5)
++
++    ax.set(xlabel='quantum', ylabel='average turnaround times',
++       title='Quantum vs Average turnaround times')
++
++    ax.grid()
++    plt.show()
++
++if __name__ == "__main__":
++   main(sys.argv[1:])
+\ No newline at end of file
+-- 
+2.17.1
+
