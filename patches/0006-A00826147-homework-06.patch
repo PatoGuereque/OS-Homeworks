@@ -1,0 +1,91 @@
+From f086e586b84904f594013ddeb910d0eeecc239f0 Mon Sep 17 00:00:00 2001
+From: PatoGuereque <contacto@patoguereque.com>
+Date: Tue, 27 Oct 2020 23:57:33 -0600
+Subject: [PATCH] A00826147-homework-06
+
+
+diff --git a/labs/06/milk_seller.c b/labs/06/milk_seller.c
+new file mode 100644
+index 0000000000000000000000000000000000000000..a5e60e7fac88070b4dc9ac691cffa7fdfe736e26
+--- /dev/null
++++ b/labs/06/milk_seller.c
+@@ -0,0 +1,75 @@
++#include <stdio.h>
++#include <stdlib.h>
++#include <pthread.h>
++#include <unistd.h>
++#include <math.h>
++#include <time.h>
++
++#define FACTORY_BOTTLES 1000
++#define BOTTLES_PER_SELLER 200
++#define MILK_SELLERS 5
++#define CUSTOMERS_PER_SELLER 5
++
++int total_bottles_sold = 0;
++pthread_mutex_t bottle_lock; 
++
++struct seller {
++    pthread_t thread_id;
++    unsigned int seed;
++    int milkman_id;
++    int bottles_sold;
++    int attending_customer;
++};
++
++void sell_bottles(const struct seller milk_seller, const int amount) {
++    pthread_mutex_lock(&bottle_lock);
++    total_bottles_sold += amount;
++    pthread_mutex_unlock(&bottle_lock);
++    printf("Milkman %d: Sold %d bottles to Customer %d\n", milk_seller.milkman_id, amount, milk_seller.attending_customer);
++}
++
++void *milkman(void *args) {
++    struct seller *milk_seller = args;
++    milk_seller->bottles_sold = 0;
++
++    for (int i = 1; i <= CUSTOMERS_PER_SELLER && milk_seller->bottles_sold < BOTTLES_PER_SELLER; i++) {
++        milk_seller->attending_customer = i;
++        int rand_bottles = (rand_r(&milk_seller->seed) / ((double)(unsigned) RAND_MAX +1)) * BOTTLES_PER_SELLER;
++        rand_bottles = rand_bottles + milk_seller->bottles_sold > BOTTLES_PER_SELLER ? BOTTLES_PER_SELLER - milk_seller->bottles_sold : rand_bottles;
++        sell_bottles(*milk_seller, rand_bottles);
++        milk_seller->bottles_sold += rand_bottles;
++    }
++    
++
++}
++
++// no parameters, just run with ./milk_seller
++int main(int argc, char *argv[]) {
++    srand (time(NULL));
++    struct seller sellers[MILK_SELLERS];
++
++    if (pthread_mutex_init(&bottle_lock, NULL) != 0) {
++        perror("pthread_mutex_init fail");
++        exit(1);
++    }
++
++    printf("Creating %d threads, one for each milkman\n", MILK_SELLERS);
++    for (int i = 0; i < MILK_SELLERS; i++) {
++        sellers[i].milkman_id = i + 1;
++        sellers[i].seed = rand();
++
++        if (pthread_create(&sellers[i].thread_id, NULL, &milkman, &sellers[i]) != 0) {
++            perror("pthread_create fail");
++            exit(1);
++        }
++    }
++
++    for (int i = 0; i < MILK_SELLERS; i++) {
++        pthread_join(sellers[i].thread_id, NULL);
++    }
++
++    pthread_mutex_destroy(&bottle_lock);
++
++    printf("The total amount of bottles sold is: %d\n", total_bottles_sold);
++    return 0;
++}
+\ No newline at end of file
+-- 
+2.17.1
+

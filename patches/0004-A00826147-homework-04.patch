@@ -1,4 +1,4 @@
-From d73790d6663371d3d52cb6eaf564a822180fdb31 Mon Sep 17 00:00:00 2001
+From 6082a564c9213c8b67cd839621fb8b293bbdb4a9 Mon Sep 17 00:00:00 2001
 From: PatoGuereque <contacto@patoguereque.com>
 Date: Fri, 2 Oct 2020 23:56:08 -0500
 Subject: [PATCH] A00826147-homework-04
@@ -20,7 +20,7 @@ The average PI value calculated was 3.14157, not bad as it got the first 4 digit
 
 diff --git a/labs/04/montecarlo.c b/labs/04/montecarlo.c
 new file mode 100644
-index 0000000000000000000000000000000000000000..e86c68e166e4d0f44fbb8d2c503d27da9b5bce5f
+index 0000000000000000000000000000000000000000..6c2c292268afc67fecde408e71d4111853396ffa
 --- /dev/null
 +++ b/labs/04/montecarlo.c
 @@ -0,0 +1,126 @@
